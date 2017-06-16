@@ -31,7 +31,7 @@ class Client:
 		self.auth()
 
 	def get_loop(self):
-		self.send_data({'method':'messages.send','values':{'text':'%s присоединился к нашкй вечеринке!!!' % self.username},'token':str(self.token)})
+		self.send_data({'method':'messages.send','values':{'text':u'%s присоединился к нашкй вечеринке!!!' % self.username},'token':str(self.token)})
 		while 1:
 			response = self.send_data({'method':'messages.get','token':str(self.token),'values':{'unixtime':self.time}},'user_conn')
 			if response['type'] == 'result':
@@ -44,13 +44,11 @@ class Client:
 
 	def auth(self):
 		if True:
-			self.username = raw_input('Please enter your name: ')
-			#q.send(dumps({'method':'auth.user','values':{'username':'coolboy','password':'net'}})+'~~~~~~')
+			self.username = raw_input('Please enter your name: ').decode('utf8')
 			response = self.send_data({'method':'auth.user','values':{'username':self.username}})
 			if response['type'] == 'auth':
 				if response['result'] == 'new':
-					password = raw_input('Hello %s, you need create password: ' % username)
-					#{'method':'auth.user','values':{'username':'coolboy','password':'net'}
+					password = raw_input('Hello %s, you need create password: ' % self.username.encode('utf8')).decode('utf8')
 					response = self.send_data({'method':'auth.user','values':{'username':self.username,'password':password}})
 					if response['type'] == 'token':
 						self.token = response['result']
@@ -59,7 +57,7 @@ class Client:
 						print 'unknown error %s' % response
 						return
 				if response['result'] == 'bad':
-					password = raw_input('Hello %s, you need enter your password: ' % self.username)
+					password = raw_input('Hello %s, you need enter your password: ' % self.username.encode('utf8')).decode('utf8')
 					response = self.send_data({'method':'auth.user','values':{'username':self.username,'password':password}})
 					if response['type'] == 'token':
 						self.token = response['result']
@@ -87,12 +85,11 @@ class Client:
 		new_msg.start()
 		while True:
 			try:
-				msg = raw_input('>')
+				msg = raw_input('>').decode('utf8')
 			except KeyboardInterrupt:
-				self.send_data({'method':'messages.send','values':{'text':'ооо нет!! господа,нас покинул %s' % self.username},'token':str(self.token)})
+				self.send_data({'method':'messages.send','values':{'text':u'ооо нет!! господа,нас покинул %s' % self.username},'token':str(self.token)})
 				self.send_data({'method':'deauth.user','values':{},'token':str(self.token)})
 				return
-			#{'method':'messages.send','values':{'text':'hello food'},'token':str(w)})+'~~~~~~')
 			if len(msg) < 256:
 				self.send_data({'method':'messages.send','values':{'text':msg},'token':str(self.token)})
 			else:

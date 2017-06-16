@@ -37,7 +37,7 @@ class Client:
 			if response['type'] == 'result':
 				if len(response['result']) > 0:
 					for msg in response['result']:
-						print '%s say: %s' % (msg['username'],msg['text'])
+						print '%s: %s' % (msg['username'],msg['text'])
 						if msg['unixtime'] > self.time:
 							self.time = msg['unixtime'] + 1
 			P(1)
@@ -47,7 +47,6 @@ class Client:
 			self.username = raw_input('Please enter your name: ')
 			#q.send(dumps({'method':'auth.user','values':{'username':'coolboy','password':'net'}})+'~~~~~~')
 			response = self.send_data({'method':'auth.user','values':{'username':self.username}})
-			#print response
 			if response['type'] == 'auth':
 				if response['result'] == 'new':
 					password = raw_input('Hello %s, you need create password: ' % username)
@@ -94,7 +93,10 @@ class Client:
 				self.send_data({'method':'deauth.user','values':{},'token':str(self.token)})
 				return
 			#{'method':'messages.send','values':{'text':'hello food'},'token':str(w)})+'~~~~~~')
-			self.send_data({'method':'messages.send','values':{'text':msg},'token':str(self.token)})
+			if len(msg) < 256:
+				self.send_data({'method':'messages.send','values':{'text':msg},'token':str(self.token)})
+			else:
+				print u'so many message len > 255!!!!' 
 		
 
 	def send_data(self,data,use_socket = 'conn'):
@@ -102,7 +104,8 @@ class Client:
 			conn = self.conn
 		else:
 			conn = self.user_conn
-		conn.send(D(data)+u'~~~~~~')
+		data = D(data).encode('utf8').encode('hex')
+		conn.send(data)
 		return L(self.recv_data(use_socket))
 
 	def recv_data(self,use_socket = 'conn'):
@@ -112,28 +115,12 @@ class Client:
 			conn = self.user_conn
 		temporary = u''
 		accept_data = u''
+		BUFF_SIZE = 4096
 		while True:
-			temporary = conn.recv(1024)
-			#line ~~~
-			#lineend ~~~~~~
-			if temporary[-3:] == u'~~~':
-				if temporary[-6:] == u'~~~~~~':
-					accept_data += temporary[:-6]
-					return accept_data
-				else:
-					accept_data += temporary[:-3]
-			else:
-				print accept_data
-				print 'not special langua\nclose connection'
-				return False
-				
-
-
-			if not temporary:
-				return accept_data
-			else:
-				accept_data += temporary
-
+			temporary = conn.recv(BUFF_SIZE)
+			accept_data += temporary
+			if len(temporary) < BUFF_SIZE:
+				return accept_data.decode('hex').decode('utf8')
 
 
 

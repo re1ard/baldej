@@ -99,7 +99,14 @@ class Client:
 					if method_header[1] == 'get':
 						if not 'unixtime' in data['values']:
 							return self.send_error('not unixtime text value in messages method')
-						return self.send({'type':'result','result':list(db.messages.find().where('this.unixtime > %s' % data['values']['unixtime']))})
+						if not 'out' in data['values']:
+							out = False
+						else:
+							out = bool(data['values']['out'])
+						if out:
+							return self.send({'type':'result','result':list(db.messages.find().where('this.unixtime > %s && this.username == "%s"' % (data['values']['unixtime'],active_tokens[data['token']])))})
+						else:
+							return self.send({'type':'result','result':list(db.messages.find().where('this.unixtime > %s && !(this.username == "%s")' % (data['values']['unixtime'],active_tokens[data['token']])))})
 				if method_header[0] == 'deauth':
 					if method_header[1] == 'user':
 						del active_tokens[data['token']]
@@ -114,7 +121,8 @@ class Client:
 
 	def send(self,data):
 		try:
-			self.conn.send(D(data)+u'~~~~~~')
+			datatariki = D(data)
+			self.conn.send(datatariki.encode('utf8').encode('hex'))
 			print 'outcoming: %s' % data
 			return True	
 		except:
@@ -126,26 +134,12 @@ class Client:
 	def recv_data(self):
 		temporary = u''
 		accept_data = u''
+		BUFF_SIZE = 4096
 		while True:
-			temporary = self.conn.recv(1024)
-			#line ~~~
-			#lineend ~~~~~~
-			if temporary[-3:] == u'~~~':
-				if temporary[-6:] == u'~~~~~~':
-					accept_data += temporary[:-6]
-					return accept_data
-				else:
-					accept_data += temporary[:-3]
-			else:
-				print 'not special langua\nclose connection'
-				return False
-				
-
-
-			if not temporary:
-				return accept_data
-			else:
-				accept_data += temporary
+			temporary = self.conn.recv(BUFF_SIZE)
+			accept_data += temporary
+			if len(temporary) < BUFF_SIZE:
+				return accept_data.decode('hex').decode('utf8')
 
 class Server:
 	def __init__(self,port = 1488,users = 128):

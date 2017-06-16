@@ -94,7 +94,7 @@ class Client:
 						if not 'text' in data['values']:
 							return self.send_error('not found text value in messages method')
 						else:
-							db.messages.save({'unixtime':U(),'text':data['values']['text'],'username':active_tokens[data['token']]})
+							db.messages.save({'unixtime':U(),'text':data['values']['text'],'username':active_tokens[data['token']],'id':db.messages.count()})
 							return self.send({'type':'result','result':'ok'})
 					if method_header[1] == 'get':
 						if not 'unixtime' in data['values']:
@@ -104,9 +104,15 @@ class Client:
 						else:
 							out = bool(data['values']['out'])
 						if out:
-							return self.send({'type':'result','result':list(db.messages.find().where('this.unixtime > %s && this.username == "%s"' % (data['values']['unixtime'],active_tokens[data['token']])))})
+							response = list(db.messages.find().where('this.unixtime > %s && this.username == "%s"' % (data['values']['unixtime'],active_tokens[data['token']])))
+							for resp in range(0,len(response)):
+								del response[resp]['_id']
+							return self.send({'type':'result','result':response})
 						else:
-							return self.send({'type':'result','result':list(db.messages.find().where('this.unixtime > %s && !(this.username == "%s")' % (data['values']['unixtime'],active_tokens[data['token']])))})
+							response = list(db.messages.find().where('this.unixtime > %s && !(this.username == "%s")' % (data['values']['unixtime'],active_tokens[data['token']])))
+							for resp in range(0,len(response)):
+								del response[resp]['_id']
+							return self.send({'type':'result','result':response})
 				if method_header[0] == 'deauth':
 					if method_header[1] == 'user':
 						del active_tokens[data['token']]
